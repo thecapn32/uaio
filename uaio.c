@@ -21,6 +21,10 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef CONFIG_UAIO_FREERTOS
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
 #include "uaio.h"
 #include "taskpool.h"
 
@@ -199,6 +203,9 @@ int
 uaio_loop(struct uaio *c) {
     struct uaio_task *task = NULL;
     struct uaio_taskpool *taskpool = &c->taskpool;
+#ifdef CONFIG_UAIO_FREERTOS
+    TickType_t xdelay;
+#endif
 
 #ifdef CONFIG_UAIO_MODULES
     int i;
@@ -232,7 +239,12 @@ loop:
                     UAIO_RUNNING | UAIO_TERMINATING);
         if (task == NULL) {
 #ifdef CONFIG_UAIO_MODULES
-            modtimeout = CONFIG_UAIO_MODULES_TICKTIMEOUT_LONG_US / c->modulescount;
+            modtimeout = CONFIG_UAIO_MODULES_TICKTIMEOUT_LONG_US /
+                c->modulescount;
+#endif
+#ifdef CONFIG_UAIO_FREERTOS
+            xdelay = modtimeout / 1000 / portTICK_PERIOD_MS;
+            vTaskDelay(xdelay);
 #endif
             continue;
         }

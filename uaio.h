@@ -21,6 +21,7 @@
 
 
 #include <stddef.h>
+#include "esp_timer.h"
 
 
 enum uaio_taskstatus {
@@ -48,6 +49,7 @@ struct uaio_task {
     struct uaio* uaio;
     struct uaio_basecall *current;
     enum uaio_taskstatus status;
+    esp_timer_handle_t sleep;
     int eno;
 };
 
@@ -163,6 +165,10 @@ int
 uaio_loop(struct uaio* c);
 
 
+int
+uaio_sleep(struct uaio_task *task, unsigned long us);
+
+
 /* Generic stuff */
 #define UAIO_NAME_PASTER(x, y) x ## _ ## y
 #define UAIO_NAME_EVALUATOR(x, y)  UAIO_NAME_PASTER(x, y)
@@ -174,6 +180,17 @@ uaio_loop(struct uaio* c);
     do { \
         (task)->current->line = __LINE__; \
         if (entity ## _call_new(task, coro, __VA_ARGS__)) { \
+            (task)->status = UAIO_TERMINATING; \
+        } \
+        return; \
+        case __LINE__:; \
+    } while (0)
+
+
+#define UAIO_SLEEP(task, us) \
+    do { \
+        (task)->current->line = __LINE__; \
+        if (uaio_sleep(task, us)) { \
             (task)->status = UAIO_TERMINATING; \
         } \
         return; \
