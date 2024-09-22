@@ -16,8 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef UAIO_UAIO_H_
-#define UAIO_UAIO_H_
+#ifndef UAIO_H_
+#define UAIO_H_
 
 
 #include <stddef.h>
@@ -44,26 +44,16 @@ struct uaio_basecall {
 };
 
 
-#ifdef UAIO_URING
-    struct uaio_uring_taskstate;
-#endif
-
-
 struct uaio_task {
     struct uaio* uaio;
     struct uaio_basecall *current;
     enum uaio_taskstatus status;
     int eno;
-
-#ifdef UAIO_URING
-    struct uaio_uring_taskstate *uring;
-#endif
 };
 
 
 /* Modules */
-#ifdef UAIO_MODULES
-
+#ifdef CONFIG_UAIO_MODULES
 
 struct uaio_module;
 typedef int (*uaio_hook) (struct uaio *c, struct uaio_module *m);
@@ -84,7 +74,69 @@ int
 uaio_module_uninstall(struct uaio *c, struct uaio_module *m);
 
 
-#endif  // UAIO_MODULES
+/* fdmon module */
+#ifdef CONFIG_UAIO_FDMON
+
+struct uaio_fdmon;
+typedef int (*uaio_filemonitor) (struct uaio_fdmon *iom,
+        struct uaio_task *task, int fd, int events);
+typedef int (*uaio_fileforget) (struct uaio_fdmon *iom, int fd);
+struct uaio_fdmon {
+    struct uaio_module;
+    uaio_filemonitor monitor;
+    uaio_fileforget forget;
+};
+
+
+#define UAIO_FILE_FORGET(fdmon, fd) (fdmon)->forget(fdmon, fd)
+#define UAIO_FILE_AWAIT(fdmon, task, fd, events) \
+    do { \
+        (task)->current->line = __LINE__; \
+        if ((fdmon)->monitor(fdmon, task, fd, events)) { \
+            (task)->status = UAIO_TERMINATING; \
+        } \
+        else { \
+            (task)->status = UAIO_WAITING; \
+        } \
+        return; \
+        case __LINE__:; \
+    } while (0)
+
+
+/* IO helper macros */
+#define UAIO_IN 0x1
+#define UAIO_ERR 0x2
+#define UAIO_OUT 0x4
+#define IO_MUSTWAIT(e) \
+    (((e) == EAGAIN) || ((e) == EWOULDBLOCK) || ((e) == EINPROGRESS))
+
+
+/* select module */
+#ifdef CONFIG_UAIO_SELECT
+
+struct uaio_select;
+
+
+struct uaio_select *
+uaio_select_create(struct uaio* c, size_t maxfileno);
+
+
+int
+uaio_select_destroy(struct uaio* c, struct uaio_select *s);
+
+
+int
+uaio_select_monitor(struct uaio_select *s, struct uaio_task *task, int fd,
+        int events);
+
+
+int
+uaio_select_forget(struct uaio_select *s, int fd);
+
+
+#endif  // CONFIG_UAIO_SELECT
+#endif  // CONFIG_UAIO_FDMON
+#endif  // CONFIG_UAIO_MODULES
 
 
 struct uaio*
@@ -161,4 +213,4 @@ uaio_loop(struct uaio* c);
 #define UAIO_CLEARERROR(task) task->eno = 0
 
 
-#endif  // UAIO_UAIO_H_
+#endif  // UAIO_H_

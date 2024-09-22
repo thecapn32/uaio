@@ -19,7 +19,7 @@
 #include <stdlib.h>  // NOLINT
 #include <unistd.h>
 
-#include "uaio/uaio.h"
+#include "uaio.h"
 
 
 void

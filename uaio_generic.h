@@ -16,8 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef UAIO_UAIO_H_  // NOLINT(build/header_guard)
-#error "uaio/uaio.h must be imported before importing the uaio/generic.h"
+#ifndef UAIO_H_  // NOLINT(build/header_guard)
+#error "uaio.h must be imported before importing the uaio/generic.h"
 #error "And also #undef UAIO_ENTITY, UAIO_ARG1 and UAIO_ARG2 then #define " \
     "UAIO_ENTITY and optionals: UAIO_ARG1/UAIO_ARG2 before importing the " \
     "uaio/generic.h"

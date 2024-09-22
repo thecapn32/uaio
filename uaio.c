@@ -21,17 +21,17 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "uaio/uaio.h"
-#include "uaio/taskpool.h"
+#include "uaio.h"
+#include "taskpool.h"
 
 
 struct uaio {
     struct uaio_taskpool taskpool;
     volatile bool terminating;
-#ifdef UAIO_MODULES
-    struct uaio_module *modules[UAIO_MODULES_MAX];
+#ifdef CONFIG_UAIO_MODULES
+    struct uaio_module *modules[CONFIG_UAIO_MODULES_MAX];
     size_t modulescount;
-#endif  // UAIO_MODULES
+#endif  // CONFIG_UAIO_MODULES
 };
 
 
@@ -44,9 +44,9 @@ uaio_create(size_t maxtasks) {
 
     c->terminating = false;
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
     c->modulescount = 0;
-#endif  // UAIO_MODULES
+#endif  // CONFIG_UAIO_MODULES
 
     /* Initialize task pool */
     if (uaio_taskpool_init(&c->taskpool, maxtasks)) {
@@ -109,11 +109,11 @@ uaio_task_killall(struct uaio *c) {
 }
 
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
 
 int
 uaio_module_install(struct uaio *c, struct uaio_module *m) {
-    if (c->modulescount == UAIO_MODULES_MAX) {
+    if (c->modulescount == CONFIG_UAIO_MODULES_MAX) {
         return -1;
     }
 
@@ -158,7 +158,7 @@ uaio_module_uninstall(struct uaio *c, struct uaio_module *m) {
 }
 
 
-#endif  // UAIO_MODULES
+#endif  // CONFIG_UAIO_MODULES
 
 
 static inline bool
@@ -200,7 +200,7 @@ uaio_loop(struct uaio *c) {
     struct uaio_task *task = NULL;
     struct uaio_taskpool *taskpool = &c->taskpool;
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
     int i;
     unsigned int modtimeout = 1000;
     struct uaio_module *module;
@@ -217,7 +217,7 @@ loop:
 
     while (taskpool->count) {
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
         if (!c->terminating) {
             for (i = 0; i < c->modulescount; i++) {
                 module = c->modules[i];
@@ -231,8 +231,8 @@ loop:
         task = uaio_taskpool_next(taskpool, task,
                     UAIO_RUNNING | UAIO_TERMINATING);
         if (task == NULL) {
-#ifdef UAIO_MODULES
-            modtimeout = UAIO_MODULES_TICKTIMEOUT_LONG_US / c->modulescount;
+#ifdef CONFIG_UAIO_MODULES
+            modtimeout = CONFIG_UAIO_MODULES_TICKTIMEOUT_LONG_US / c->modulescount;
 #endif
             continue;
         }
@@ -243,12 +243,12 @@ loop:
             }
         } while ((task = uaio_taskpool_next(taskpool, task,
                     UAIO_RUNNING | UAIO_TERMINATING)));
-#ifdef UAIO_MODULES
-        modtimeout = UAIO_MODULES_TICKTIMEOUT_SHORT_US;
+#ifdef CONFIG_UAIO_MODULES
+        modtimeout = CONFIG_UAIO_MODULES_TICKTIMEOUT_SHORT_US;
 #endif
     }
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
     for (i = 0; i < c->modulescount; i++) {
         module = c->modules[i];
         if (module->loopend && module->loopend(c, module)) {
@@ -259,7 +259,7 @@ loop:
 
     return 0;
 
-#ifdef UAIO_MODULES
+#ifdef CONFIG_UAIO_MODULES
 interrupt:
     c->terminating = true;
     uaio_task_killall(c);

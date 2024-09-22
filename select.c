@@ -18,11 +18,9 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#ifndef UAIO_FDMON_MAXFILES
-#include <sys/resource.h>
-#endif
+#include <sys/select.h>
 
-#include "uaio/select.h"
+#include "uaio.h"
 
 
 #define FILEEVENT_RESET(fe) \
@@ -184,23 +182,10 @@ uaio_select_create(struct uaio* c, size_t maxevents) {
         goto failed;
     }
 
-#ifndef UAIO_FDMON_MAXFILES
-    /* Find maximum allowed file descriptors for this process and allocate
-     * as much as needed for task repository
-     */
-    struct rlimit limits;
-    if (getrlimit(RLIMIT_NOFILE, &limits)) {
+    if (maxevents > CONFIG_UAIO_FDMON_MAXFILES) {
         goto failed;
     }
 
-    if (maxevents > limits.rlim_max) {
-        goto failed;
-    }
-#else
-    if (maxevents > UAIO_FDMON_MAXFILES) {
-        goto failed;
-    }
-#endif
     /* select(2) requires the highest number of fileno instead of event count.
      * So, it must increased 3 times for (stdin, stdout and stderr) */
     s->maxfileno = maxevents + 3;
