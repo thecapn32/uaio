@@ -16,6 +16,7 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
@@ -91,6 +92,7 @@ _tick(struct uaio *c, struct uaio_select *s, unsigned int timeout_us) {
 
     nfds = select(s->maxfileno + 1, &rfds, &wfds, &efds, &tv);
     if (nfds == -1) {
+        perror("select");
         return -1;
     }
 

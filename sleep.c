@@ -16,29 +16,9 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-// #include "esp_sleep.h"
+#include "esp_sleep.h"
 
 #include "uaio.h"
-
-
-// ASYNC
-// uaio_sleepA(struct uaio_task *self, uaio_sleep_t *state,
-//         struct uaio_fdmon *iom, time_t miliseconds) {
-//     int eno;
-//     int fd = *state;
-//     UAIO_BEGIN(self);
-//
-//     if (_settimeout(fd, miliseconds)) {
-//         eno = errno;
-//         close(fd);
-//         *state = -1;
-//         UAIO_THROW(self, eno);
-//     }
-//
-//     UAIO_FILE_AWAIT(iom, self, fd, UAIO_IN);
-//     UAIO_FILE_FORGET(iom, fd);
-//     UAIO_FINALLY(self);
-// }
 
 
 static void
